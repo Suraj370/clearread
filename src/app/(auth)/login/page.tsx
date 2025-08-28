@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
 import { useActionState, useRef, useEffect } from "react";
 import SubmitButton from "@/components/SubmitButton";
 import { loginAction } from "@/actions/auth";
-
+import Link from "next/link";
 
 export default function Login() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -26,7 +26,9 @@ export default function Login() {
       {state.success && <p className="text-green-500 mb-4">{state.success}</p>}
       <form ref={formRef} action={formAction} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block mb-1">Email</label>
+          <label htmlFor="email" className="block mb-1">
+            Email
+          </label>
           <input
             type="email"
             name="email"
@@ -35,7 +37,9 @@ export default function Login() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="block mb-1">Password</label>
+          <label htmlFor="password" className="block mb-1">
+            Password
+          </label>
           <input
             type="password"
             name="password"
@@ -45,6 +49,15 @@ export default function Login() {
         </div>
         <SubmitButton defaultText="Login" loadingText="Logging in..." />
       </form>
+      <div className="mt-6 flex items-center space-x-2 ">
+        <p className="text-gray-600">Don't have an account? </p>
+        <Link
+          href="/signup"
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
+          Sign up here
+        </Link>
+      </div>
     </div>
   );
 }

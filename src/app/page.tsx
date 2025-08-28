@@ -2,7 +2,9 @@
 // import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import React, { useState, useEffect } from 'react';
+import Link from "next/link";
 import { ChevronDown, BookOpen, Zap, Shield, Users, ArrowRight, Menu, X, Brain, Eye, Heart } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState({});
@@ -41,7 +43,7 @@ export default function Home() {
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                ReadEasy
+                Clearread Converter
               </span>
             </div>
             
@@ -56,9 +58,9 @@ export default function Home() {
               <button onClick={() => scrollToSection('benefits')} className="text-gray-600 hover:text-purple-600 transition-colors">
                 Benefits
               </button>
-              <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                Try Now
-              </button>
+              <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                <Link href="/login">Try Now</Link>
+              </Button>
             </div>
 
             {/* Mobile Menu Button */}
