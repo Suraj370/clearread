@@ -50,7 +50,7 @@ export default function Login() {
         <SubmitButton defaultText="Login" loadingText="Logging in..." />
       </form>
       <div className="mt-6 flex items-center space-x-2 ">
-        <p className="text-gray-600">Don't have an account? </p>
+        <p className="text-gray-600">Don&apos;t have an account? </p>
         <Link
           href="/signup"
           className="text-blue-600 hover:text-blue-800 underline"

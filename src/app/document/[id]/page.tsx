@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/context/AuthProvider";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -14,30 +14,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { User } from "firebase/auth";
 
-// Note: Add OpenDyslexic font to your project.
-// Download from https://antijingoist.itch.io/opendyslexic
-// Place font files in public/fonts/ and add to globals.css:
-// @font-face {
-//   font-family: 'OpenDyslexic';
-//   src: url('/fonts/OpenDyslexic-Regular.woff2') format('woff2');
-//   font-weight: normal;
-//   font-style: normal;
-// }
-
-// Define the Document type
+// Define the Document type with proper Firestore timestamp typing
 interface Document {
   id: string;
   name?: string;
   originalText?: string;
   convertedText?: string;
   userId?: string;
-  timestamp?: any; // Firestore timestamp
+  timestamp?: Timestamp | { _seconds: number; _nanoseconds: number } | string;
 }
 
 // Define the Auth context type
 interface AuthContext {
   user: User | null;
   loading: boolean;
+}
+
+// API response types
+interface ConvertTextResponse {
+  convertedText: string;
+}
+
+interface RenameDocumentResponse {
+  newName: string;
 }
 
 export default function DocumentPage() {
@@ -72,7 +71,11 @@ export default function DocumentPage() {
             }
             const docData: Document = {
               id: docSnap.id,
-              ...data,
+              name: data.name,
+              originalText: data.originalText,
+              convertedText: data.convertedText,
+              userId: data.userId,
+              timestamp: data.timestamp,
             };
             setDocument(docData);
             setOriginalText(data.originalText || "");
@@ -83,7 +86,7 @@ export default function DocumentPage() {
             setError("Document not found");
           }
         } catch (err: unknown) {
-          console.error("Failed to fetch document:", (err as Error).message);
+          console.error("Failed to fetch document:", err instanceof Error ? err.message : String(err));
           setError("Failed to load document");
         }
       };
@@ -106,13 +109,15 @@ export default function DocumentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.uid, originalText }),
       });
+      
       if (!response.ok) {
-        throw new Error("Failed to convert text");
+        throw new Error(`Failed to convert text: ${response.status} ${response.statusText}`);
       }
-      const data = await response.json();
+      
+      const data: ConvertTextResponse = await response.json();
       setConvertedText(data.convertedText);
     } catch (err: unknown) {
-      console.error("Failed to convert text:", (err as Error).message);
+      console.error("Failed to convert text:", err instanceof Error ? err.message : String(err));
       setError("Failed to convert text. Please try again.");
     }
   };
@@ -132,15 +137,17 @@ export default function DocumentPage() {
           newName: name,
         }),
       });
+      
       if (!response.ok) {
-        throw new Error("Failed to rename document");
+        throw new Error(`Failed to rename document: ${response.status} ${response.statusText}`);
       }
-      const data = await response.json();
+      
+      const data: RenameDocumentResponse = await response.json();
       setName(data.newName);
       setOldName(data.newName);
       setIsEditingName(false);
     } catch (err: unknown) {
-      console.error("Failed to rename document:", (err as Error).message);
+      console.error("Failed to rename document:", err instanceof Error ? err.message : String(err));
       setError("Failed to rename document. Please try again.");
     }
   };
@@ -151,13 +158,17 @@ export default function DocumentPage() {
         originalText,
       });
     } catch (err: unknown) {
-      console.error("Failed to save original text:", (err as Error).message);
+      console.error("Failed to save original text:", err instanceof Error ? err.message : String(err));
       setError("Failed to save changes");
     }
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>Loading...</div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -166,7 +177,11 @@ export default function DocumentPage() {
   }
 
   if (!document) {
-    return <div>{error || "Loading document..."}</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>{error || "Loading document..."}</div>
+      </div>
+    );
   }
 
   return (
@@ -186,8 +201,9 @@ export default function DocumentPage() {
           </div>
         ) : (
           <h1
-            className="text-2xl font-bold cursor-pointer"
+            className="text-2xl font-bold cursor-pointer hover:text-purple-600 transition-colors"
             onClick={() => setIsEditingName(true)}
+            title="Click to edit document name"
           >
             {name}
           </h1>
@@ -195,7 +211,11 @@ export default function DocumentPage() {
         <Button onClick={() => router.push("/dashboard")}>Back to Dashboard</Button>
       </div>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Original Text */}
@@ -208,11 +228,15 @@ export default function DocumentPage() {
               value={originalText}
               onChange={(e) => setOriginalText(e.target.value)}
               placeholder="Enter your text here..."
-              className="min-h-[300px]"
+              className="min-h-[300px] resize-y"
             />
-            <div className="mt-4 flex space-x-2">
-              <Button onClick={handleSaveOriginal}>Save Changes</Button>
-              <Button onClick={handleConvertText}>Convert to Dyslexia-Friendly</Button>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Button onClick={handleSaveOriginal} variant="outline">
+                Save Changes
+              </Button>
+              <Button onClick={handleConvertText} className="bg-purple-600 hover:bg-purple-700">
+                Convert to Dyslexia-Friendly
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -224,7 +248,7 @@ export default function DocumentPage() {
           </CardHeader>
           <CardContent>
             <div
-              className="min-h-[300px] p-4 border rounded"
+              className="min-h-[300px] p-4 border rounded overflow-y-auto"
               style={{
                 fontFamily,
                 fontSize: `${fontSize}px`,
@@ -236,11 +260,17 @@ export default function DocumentPage() {
                 maxWidth: "70ch", // Keep lines short
               }}
             >
-              {convertedText.split("\n\n").map((paragraph, index) => (
-                <p key={index} className="mb-4">
-                  {paragraph}
+              {convertedText ? (
+                convertedText.split("\n\n").map((paragraph, index) => (
+                  <p key={index} className="mb-4 last:mb-0">
+                    {paragraph}
+                  </p>
+                ))
+              ) : (
+                <p className="text-gray-500 italic">
+                  Converted text will appear here after processing...
                 </p>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -252,71 +282,83 @@ export default function DocumentPage() {
           <CardTitle>Customization Tools for Readability</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
-            <Label>Font Family</Label>
-            <Select value={fontFamily} onValueChange={setFontFamily}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select font" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Arial">Arial</SelectItem>
-                <SelectItem value="Helvetica">Helvetica</SelectItem>
-                <SelectItem value="Verdana">Verdana</SelectItem>
-                <SelectItem value="OpenDyslexic">OpenDyslexic</SelectItem>
-                <SelectItem value="'Comic Sans MS', cursive">Comic Sans</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="font-family">Font Family</Label>
+              <Select value={fontFamily} onValueChange={setFontFamily}>
+                <SelectTrigger id="font-family">
+                  <SelectValue placeholder="Select font" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Arial">Arial</SelectItem>
+                  <SelectItem value="Helvetica">Helvetica</SelectItem>
+                  <SelectItem value="Verdana">Verdana</SelectItem>
+                  <SelectItem value="OpenDyslexic">OpenDyslexic</SelectItem>
+                  <SelectItem value="'Comic Sans MS', cursive">Comic Sans</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div>
-            <Label>Font Size: {fontSize}px</Label>
-            <Slider
-              value={[fontSize]}
-              onValueChange={(value) => setFontSize(value[0])}
-              min={12}
-              max={32}
-              step={1}
-            />
-          </div>
+            <div>
+              <Label htmlFor="font-size">Font Size: {fontSize}px</Label>
+              <Slider
+                id="font-size"
+                value={[fontSize]}
+                onValueChange={(value) => setFontSize(value[0])}
+                min={12}
+                max={32}
+                step={1}
+                className="mt-2"
+              />
+            </div>
 
-          <div>
-            <Label>Letter Spacing: {letterSpacing}em</Label>
-            <Slider
-              value={[letterSpacing]}
-              onValueChange={(value) => setLetterSpacing(value[0])}
-              min={0}
-              max={0.5}
-              step={0.05}
-            />
-          </div>
+            <div>
+              <Label htmlFor="letter-spacing">Letter Spacing: {letterSpacing}em</Label>
+              <Slider
+                id="letter-spacing"
+                value={[letterSpacing]}
+                onValueChange={(value) => setLetterSpacing(value[0])}
+                min={0}
+                max={0.5}
+                step={0.05}
+                className="mt-2"
+              />
+            </div>
 
-          <div>
-            <Label>Line Height: {lineHeight}</Label>
-            <Slider
-              value={[lineHeight]}
-              onValueChange={(value) => setLineHeight(value[0])}
-              min={1}
-              max={3}
-              step={0.1}
-            />
-          </div>
+            <div>
+              <Label htmlFor="line-height">Line Height: {lineHeight}</Label>
+              <Slider
+                id="line-height"
+                value={[lineHeight]}
+                onValueChange={(value) => setLineHeight(value[0])}
+                min={1}
+                max={3}
+                step={0.1}
+                className="mt-2"
+              />
+            </div>
 
-          <div>
-            <Label>Text Color</Label>
-            <Input
-              type="color"
-              value={textColor}
-              onChange={(e) => setTextColor(e.target.value)}
-            />
-          </div>
+            <div>
+              <Label htmlFor="text-color">Text Color</Label>
+              <Input
+                id="text-color"
+                type="color"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+                className="w-full h-10"
+              />
+            </div>
 
-          <div>
-            <Label>Background Color</Label>
-            <Input
-              type="color"
-              value={bgColor}
-              onChange={(e) => setBgColor(e.target.value)}
-            />
+            <div>
+              <Label htmlFor="bg-color">Background Color</Label>
+              <Input
+                id="bg-color"
+                type="color"
+                value={bgColor}
+                onChange={(e) => setBgColor(e.target.value)}
+                className="w-full h-10"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

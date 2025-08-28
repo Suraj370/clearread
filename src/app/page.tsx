@@ -1,13 +1,21 @@
 'use client'
-// import Navbar from "@/components/Navbar";
-import Image from "next/image";
 import React, { useState, useEffect } from 'react';
 import Link from "next/link";
 import { ChevronDown, BookOpen, Zap, Shield, Users, ArrowRight, Menu, X, Brain, Eye, Heart } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+
+// Define the type for visibility state
+interface VisibilityState {
+  hero?: boolean;
+  features?: boolean;
+  'how-it-works'?: boolean;
+  benefits?: boolean;
+  [key: string]: boolean | undefined; // Allow any string key
+}
+
 export default function Home() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState({});
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<VisibilityState>({});
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -28,7 +36,7 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  const scrollToSection = (sectionId) => {
+  const scrollToSection = (sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -80,7 +88,7 @@ export default function Home() {
               <button onClick={() => scrollToSection('features')} className="block px-3 py-2 text-gray-600">Features</button>
               <button onClick={() => scrollToSection('how-it-works')} className="block px-3 py-2 text-gray-600">How It Works</button>
               <button onClick={() => scrollToSection('benefits')} className="block px-3 py-2 text-gray-600">Benefits</button>
-              <button className="block w-full text-left px-3 py-2 bg-purple-600 text-white rounded-lg mt-2">Try Now</button>
+              <Link href="/login" className="block w-full text-left px-3 py-2 bg-purple-600 text-white rounded-lg mt-2">Try Now</Link>
             </div>
           </div>
         )}
@@ -112,10 +120,10 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center group">
+                <Link href="/login" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center group">
                   Get Started Free
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
+                </Link>
                 
                 <button className="border-2 border-purple-600 text-purple-600 px-8 py-4 rounded-full font-semibold hover:bg-purple-600 hover:text-white transition-all duration-300">
                   Watch Demo
@@ -311,7 +319,7 @@ export default function Home() {
                 Why Choose ReadEasy?
               </h2>
               <p className="text-xl text-gray-600 mb-8">
-                More than just a text converter - we're breaking down barriers to literacy and learning.
+                More than just a text converter - we&apos;re breaking down barriers to literacy and learning.
               </p>
               
               <div className="space-y-6">
@@ -389,10 +397,10 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-purple-600 px-8 py-4 rounded-full font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center group">
+            <Link href="/login" className="bg-white text-purple-600 px-8 py-4 rounded-full font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center group">
               Start Converting Now
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
             
             <button className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-purple-600 transition-all duration-300">
               Learn More
